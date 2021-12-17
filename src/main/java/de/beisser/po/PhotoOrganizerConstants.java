@@ -7,7 +7,10 @@ public final class PhotoOrganizerConstants {
     private PhotoOrganizerConstants() {
     }
 
-    public static final TimeZone TIME_ZONE = TimeZone.getTimeZone("Europe/Berlin");
     public static final String TIME_ZONE_BERLIN_STRING = "Europe/Berlin";
-    public static final String TARGET_DIRECTORY = "organized_testimages";
+    public static final TimeZone TIME_ZONE = TimeZone.getTimeZone(TIME_ZONE_BERLIN_STRING);
+    public static final String SOURCE_OPTION_SHORT = "s";
+    public static final String TARGET_OPTION_SHORT = "t";
+    public static final String SOURCE_OPTION_LONG = "source";
+    public static final String TARGET_OPTION_LONG = "target";
 }

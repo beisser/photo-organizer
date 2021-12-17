@@ -12,7 +12,7 @@ public class FileHashProviderImpl implements FileHashProvider{
 
     @Override
     public String getHash(File file) {
-        byte[] fileInBytes = new byte[0];
+        byte[] fileInBytes;
         try {
             fileInBytes = Files.readAllBytes(file.toPath());
         } catch (IOException e) {

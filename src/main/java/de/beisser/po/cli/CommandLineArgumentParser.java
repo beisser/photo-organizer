@@ -1,17 +1,13 @@
-package de.beisser.po;
+package de.beisser.po.cli;
 
 import de.beisser.po.exceptions.CommandLineOptionsException;
 import org.apache.commons.cli.*;
 
+import static de.beisser.po.PhotoOrganizerConstants.*;
+
 public class CommandLineArgumentParser {
 
-
-    private static final String SOURCE_OPTION_SHORT = "s";
-    private static final String TARGET_OPTION_SHORT = "t";
-    private static final String SOURCE_OPTION_LONG = "source";
-    private static final String TARGET_OPTION_LONG = "target";
-
-    ExtractedCommandLineOptions extractDirectoryOptions(String[] args) {
+    public ExtractedCommandLineOptions extractDirectoryOptions(String[] args) {
         CommandLine cmd = getCommandLine(args);
         validateCommandLineOptions(cmd);
 
@@ -27,7 +23,7 @@ public class CommandLineArgumentParser {
     private CommandLine getCommandLine(String[] args) {
         final Options commandLineOptions = configureExpectedCommandLineOptions();
         CommandLineParser parser = new DefaultParser();
-        CommandLine commandLine = null;
+        CommandLine commandLine;
         try {
             commandLine = parser.parse(commandLineOptions, args);
         } catch (ParseException e) {

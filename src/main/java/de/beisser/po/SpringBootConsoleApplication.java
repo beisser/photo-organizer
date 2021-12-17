@@ -1,12 +1,13 @@
 package de.beisser.po;
 
+import de.beisser.po.cli.CommandLineArgumentParser;
+import de.beisser.po.cli.ExtractedCommandLineOptions;
 import de.beisser.po.dto.FileDateDto;
 import de.beisser.po.exceptions.FileCountNotAvailableException;
 import de.beisser.po.exceptions.MetadataNotFoundException;
 import de.beisser.po.extractor.MetadataExtractor;
 import de.beisser.po.organizer.FileOrganizer;
 import me.tongfei.progressbar.ProgressBar;
-import org.apache.commons.cli.ParseException;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -25,9 +26,12 @@ import static java.lang.System.lineSeparator;
 public class SpringBootConsoleApplication
         implements CommandLineRunner {
 
-    public static void main(String[] args) throws IOException, ParseException {
+    public static void main(String[] args) {
         SpringApplication.run(SpringBootConsoleApplication.class, args);
+    }
 
+    @Override
+    public void run(String... args) throws IOException {
         final CommandLineArgumentParser commandLineArgumentParser = new CommandLineArgumentParser();
         final ExtractedCommandLineOptions extractedCommandLineOptions = commandLineArgumentParser.extractDirectoryOptions(args);
 
@@ -51,8 +55,8 @@ public class SpringBootConsoleApplication
         }
 
         logPhotoOrganizerStatistics(photoOrganizerStatistics);
-
     }
+
 
     private static void logPhotoOrganizerStatistics(PhotoOrganizerStatistics photoOrganizerStatistics) {
         StringBuilder logText = new StringBuilder("Finished organizing photos")
@@ -74,7 +78,7 @@ public class SpringBootConsoleApplication
     }
 
     private static long getFileCount(ExtractedCommandLineOptions extractedCommandLineOptions) {
-        long fileCount = -1L;
+        long fileCount;
         try (Stream<Path> list = Files.list(Paths.get(extractedCommandLineOptions.getSourceDirectory()))) {
             fileCount = list.count();
         } catch (IOException e) {
@@ -92,7 +96,4 @@ public class SpringBootConsoleApplication
         }
     }
 
-    @Override
-    public void run(String... args) {
-    }
 }
