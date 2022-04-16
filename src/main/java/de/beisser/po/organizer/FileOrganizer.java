@@ -1,6 +1,7 @@
 package de.beisser.po.organizer;
 
 import de.beisser.po.PhotoOrganizerStatistics;
+import de.beisser.po.SpringBootConsoleApplication;
 import de.beisser.po.cli.ExtractedCommandLineOptions;
 import de.beisser.po.digest.FileHashProvider;
 import de.beisser.po.digest.FileHashProviderImpl;
@@ -9,6 +10,9 @@ import de.beisser.po.exceptions.CommandLineOptionsException;
 import de.beisser.po.exceptions.FileNotCopiedException;
 import de.beisser.po.exceptions.RootDirNotCreatedException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +22,8 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 
 public class FileOrganizer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileOrganizer.class);
 
     final private String targetDirectory;
     final private String unknownDateTargetDirectory;
@@ -65,16 +71,25 @@ public class FileOrganizer {
         try {
             if(!FileUtils.contentEquals(fileToCopy, copiedFile.toFile())) {
                 final String fileToCopyHash = fileHashProvider.getHash(copiedFile.toFile());
-                final Path fileWithOtherContent = Paths.get(nestedMonthDirectory.toString(),  fileToCopy.getName() + "_" + fileToCopyHash);
+                final Path fileWithOtherContent = Paths.get(nestedMonthDirectory.toString(), getFileWithOtherContentName(fileToCopy, fileToCopyHash));
                 Files.copy(fileToCopy.toPath(), fileWithOtherContent);
                 photoOrganizerStatistics.incrementNewFilesCopied();
-                throw new RuntimeException("Found files with same name but different content");
+                photoOrganizerStatistics.incrementSkippedFilesWithDifferentHash();
+
+                LOGGER.info("Found files with same name but different content "
+                        + fileToCopy.getAbsolutePath()
+                        + "->" + copiedFile.toFile().getAbsolutePath()
+                        + "->" + fileWithOtherContent.toFile().getAbsolutePath());
             }
 
             photoOrganizerStatistics.incrementSkippedFiles();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String getFileWithOtherContentName(File fileToCopy, String fileToCopyHash) {
+        return FilenameUtils.getBaseName(fileToCopy.getName()) + "_" + fileToCopyHash + "." + FilenameUtils.getExtension(fileToCopy.getName());
     }
 
     private Path createNestedMonthDirectoryIfNotExists(int year, String monthValue, int day, File targetDirectoryRoot) {

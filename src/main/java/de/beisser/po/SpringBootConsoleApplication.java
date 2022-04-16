@@ -8,6 +8,8 @@ import de.beisser.po.exceptions.MetadataNotFoundException;
 import de.beisser.po.extractor.MetadataExtractor;
 import de.beisser.po.organizer.FileOrganizer;
 import me.tongfei.progressbar.ProgressBar;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,6 +29,8 @@ import static java.lang.System.lineSeparator;
 @SpringBootApplication
 public class SpringBootConsoleApplication
         implements CommandLineRunner {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpringBootConsoleApplication.class);
 
     public static void main(String[] args) {
         SpringApplication.run(SpringBootConsoleApplication.class, args);
@@ -72,11 +76,15 @@ public class SpringBootConsoleApplication
                 .append(photoOrganizerStatistics.getSkippedFiles())
                 .append(lineSeparator());
 
+        logText.append("Count of files skipped with different hash ")
+                .append(photoOrganizerStatistics.getSkippedFilesWithDifferentHash())
+                .append(lineSeparator());
+
         logText.append("Count of total files processed ")
                 .append(photoOrganizerStatistics.getTotalFilesProcessed())
                 .append(lineSeparator());
 
-        System.out.println(logText);
+        LOGGER.info(logText.toString());
     }
 
     private static long getFileCount(ExtractedCommandLineOptions extractedCommandLineOptions) {

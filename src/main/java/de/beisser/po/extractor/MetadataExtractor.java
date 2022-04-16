@@ -4,6 +4,9 @@ import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
+import de.beisser.po.SpringBootConsoleApplication;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -13,6 +16,8 @@ import java.util.*;
 
 @Component
 public class MetadataExtractor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetadataExtractor.class);
 
     private final List<IDateExtractor> dateExtractors;
 
@@ -68,7 +73,7 @@ public class MetadataExtractor {
     private void printAllMetadata(Metadata metadata) {
         for (Directory directory : metadata.getDirectories()) {
             for (Tag tag : directory.getTags()) {
-                System.out.println(tag);
+                LOGGER.info(tag.toString());
             }
         }
     }
