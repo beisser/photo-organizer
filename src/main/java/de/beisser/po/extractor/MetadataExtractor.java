@@ -4,7 +4,6 @@ import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
-import de.beisser.po.exceptions.MetadataNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -22,18 +21,30 @@ public class MetadataExtractor {
         final ExifSubIFDDirectoryDateExtractor exifSubIFDDirectoryDateExtractor = new ExifSubIFDDirectoryDateExtractor();
         final QuickTimeMetadataDirectoryDateExtractor quickTimeMetadataDirectoryDateExtractor = new QuickTimeMetadataDirectoryDateExtractor();
         final QuickTimeDirectoryDateExtractor quickTimeDirectoryDateExtractor = new QuickTimeDirectoryDateExtractor();
+        final MP4DirectoryDateExtractor mp4DirectoryDateExtractor = new MP4DirectoryDateExtractor();
 
         this.dateExtractors = Arrays.asList(
                 exifIFD0DirectoryDateExtractor,
                 exifSubIFDDirectoryDateExtractor,
                 quickTimeMetadataDirectoryDateExtractor,
-                quickTimeDirectoryDateExtractor
+                quickTimeDirectoryDateExtractor,
+                mp4DirectoryDateExtractor
         );
     }
 
     public Optional<LocalDateTime> getDateCreated(File file) {
-        final Metadata metadata = getFileMetadata(file);
-        return fetchOldestDate(metadata);
+        final Optional<Metadata> metadata = getFileMetadata(file);
+        if(metadata.isPresent()) {
+            return fetchOldestDate(metadata.get());
+        }
+        return Optional.empty();
+    }
+
+    public void printAllMetadataForFile(File file) {
+        final Optional<Metadata> metadata = getFileMetadata(file);
+        if(metadata.isPresent()) {
+            printAllMetadata(metadata.get());
+        }
     }
 
     private Optional<LocalDateTime> fetchOldestDate(Metadata metadata) {
@@ -46,11 +57,11 @@ public class MetadataExtractor {
                 .findFirst();
     }
 
-    private Metadata getFileMetadata(File file) {
+    private Optional<Metadata> getFileMetadata(File file) {
         try {
-            return ImageMetadataReader.readMetadata(file);
+            return Optional.of(ImageMetadataReader.readMetadata(file));
         } catch (Exception e) {
-            throw new MetadataNotFoundException("Unable to get metadata for file with name " + file.getAbsolutePath(), e);
+            return Optional.empty();
         }
     }
 

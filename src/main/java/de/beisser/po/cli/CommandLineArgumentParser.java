@@ -11,11 +11,13 @@ public class CommandLineArgumentParser {
         CommandLine cmd = getCommandLine(args);
         validateCommandLineOptions(cmd);
 
-        return new ExtractedCommandLineOptions(cmd.getOptionValue(SOURCE_OPTION_SHORT), cmd.getOptionValue(TARGET_OPTION_SHORT));
+        return new ExtractedCommandLineOptions(cmd.getOptionValue(SOURCE_OPTION_SHORT),
+                cmd.getOptionValue(TARGET_OPTION_SHORT),
+                cmd.getOptionValue(TARGET_OPTION_UNKNOWN_DATE_SHORT));
     }
 
     private void validateCommandLineOptions(CommandLine cmd) {
-        if (!cmd.hasOption(SOURCE_OPTION_SHORT) || !cmd.hasOption(TARGET_OPTION_SHORT)) {
+        if (!cmd.hasOption(SOURCE_OPTION_SHORT) || !cmd.hasOption(TARGET_OPTION_SHORT) || !cmd.hasOption(TARGET_OPTION_UNKNOWN_DATE_SHORT)) {
             throw new CommandLineOptionsException("Please provide a source and a target directory");
         }
     }
@@ -36,6 +38,7 @@ public class CommandLineArgumentParser {
         final Options commandLineOptions = new Options();
         commandLineOptions.addOption(SOURCE_OPTION_SHORT, SOURCE_OPTION_LONG, true, "Source directory to copy the photos from");
         commandLineOptions.addOption(TARGET_OPTION_SHORT, TARGET_OPTION_LONG, true, "Target directory to copy the photos to");
+        commandLineOptions.addOption(TARGET_OPTION_UNKNOWN_DATE_SHORT, TARGET_OPTION_UNKNOWN_DATE_LONG, true, "Target directory to copy photos with an unknown date to");
         return commandLineOptions;
     }
 

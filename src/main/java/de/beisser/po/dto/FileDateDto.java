@@ -4,12 +4,18 @@ import java.io.File;
 import java.time.LocalDateTime;
 
 public class FileDateDto {
-    private File file;
-    private LocalDateTime dateCreated;
+    final private File file;
+    final private LocalDateTime dateCreated;
+    final private boolean isContainsExifData;
 
     public FileDateDto(File file, LocalDateTime dateCreated) {
+        this(file, dateCreated, true);
+    }
+
+    public FileDateDto(File file, LocalDateTime dateCreated, boolean isContainsExifData) {
         this.file = file;
         this.dateCreated = dateCreated;
+        this.isContainsExifData = isContainsExifData;
     }
 
     public File getFile() {
@@ -18,5 +24,9 @@ public class FileDateDto {
 
     public LocalDateTime getDateCreated() {
         return dateCreated;
+    }
+
+    public boolean isContainsExifData() {
+        return isContainsExifData;
     }
 }

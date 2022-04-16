@@ -16,7 +16,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -40,7 +42,7 @@ public class SpringBootConsoleApplication
         final PhotoOrganizerStatistics photoOrganizerStatistics = new PhotoOrganizerStatistics();
         try (ProgressBar pb = new ProgressBar("Photo organizer", fileCount)) {
             final MetadataExtractor metadataExtractor = new MetadataExtractor();
-            final FileOrganizer fileOrganizer = new FileOrganizer(extractedCommandLineOptions.getTargetDirectory(), photoOrganizerStatistics);
+            final FileOrganizer fileOrganizer = new FileOrganizer(extractedCommandLineOptions, photoOrganizerStatistics);
 
             Files.walk(Paths.get(extractedCommandLineOptions.getSourceDirectory()))
                     .filter(Files::isRegularFile)
@@ -49,7 +51,7 @@ public class SpringBootConsoleApplication
                         pb.step();
                         photoOrganizerStatistics.incrementTotalFilesProcessed();
                     })
-                    .forEach(fileDateDto -> fileOrganizer.organize(fileDateDto.getFile(), fileDateDto.getDateCreated()));
+                    .forEach(fileDateDto -> fileOrganizer.organize(fileDateDto));
 
 
         }
@@ -92,7 +94,15 @@ public class SpringBootConsoleApplication
         if (dateCreated.isPresent()) {
             return new FileDateDto(file.toFile(), dateCreated.get());
         } else {
-            throw new MetadataNotFoundException("Unable to fetch date");
+            BasicFileAttributes basicFileAttributes;
+            try {
+                basicFileAttributes  = Files.readAttributes(file, BasicFileAttributes.class);
+                LocalDateTime fileTime = basicFileAttributes.lastModifiedTime().toInstant().atZone(ZoneId.of("Europe/Berlin")).toLocalDateTime();
+                return new FileDateDto(file.toFile(), fileTime, false);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new MetadataNotFoundException("Unable to fetch any date or file type");
+            }
         }
     }
 

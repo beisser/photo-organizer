@@ -1,8 +1,11 @@
 package de.beisser.po.organizer;
 
 import de.beisser.po.PhotoOrganizerStatistics;
+import de.beisser.po.cli.ExtractedCommandLineOptions;
 import de.beisser.po.digest.FileHashProvider;
 import de.beisser.po.digest.FileHashProviderImpl;
+import de.beisser.po.dto.FileDateDto;
+import de.beisser.po.exceptions.CommandLineOptionsException;
 import de.beisser.po.exceptions.FileNotCopiedException;
 import de.beisser.po.exceptions.RootDirNotCreatedException;
 import org.apache.commons.io.FileUtils;
@@ -16,26 +19,34 @@ import java.time.LocalDateTime;
 
 public class FileOrganizer {
 
-    private String targetDirectory;
-    private PhotoOrganizerStatistics photoOrganizerStatistics;
+    final private String targetDirectory;
+    final private String unknownDateTargetDirectory;
+    final private PhotoOrganizerStatistics photoOrganizerStatistics;
 
-    private FileHashProvider fileHashProvider = new FileHashProviderImpl();
+    final private FileHashProvider fileHashProvider = new FileHashProviderImpl();
 
-    public FileOrganizer(String targetDirectory, PhotoOrganizerStatistics photoOrganizerStatistics) {
-        this.targetDirectory = targetDirectory;
+    public FileOrganizer(ExtractedCommandLineOptions extractedCommandLineOptions, PhotoOrganizerStatistics photoOrganizerStatistics) {
+        this.targetDirectory = extractedCommandLineOptions.getTargetDirectory();
+        this.unknownDateTargetDirectory = extractedCommandLineOptions.getUnkownDataDirectory();
         this.photoOrganizerStatistics = photoOrganizerStatistics;
     }
 
-    public void organize(File file, LocalDateTime dateCreated) {
-        final int year = getYear(dateCreated);
-        final String month = getMonth(dateCreated);
+    public void organize(FileDateDto fileDateDto) {
+        File targetDirectoryRoot = new File(targetDirectory);
 
-        final File targetDirectoryRoot = new File(targetDirectory);
+        if(!fileDateDto.isContainsExifData()) {
+            targetDirectoryRoot = new File(unknownDateTargetDirectory);
+        }
+
+        final int year = getYear(fileDateDto.getDateCreated());
+        final String month = getMonth(fileDateDto.getDateCreated());
+        final int day = getDay(fileDateDto.getDateCreated());
+
         createRootDirectoryIfNotExists(targetDirectoryRoot);
 
-        final Path nestedMonthDirectory = createNestedMonthDirectoryIfNotExists(year, month, targetDirectoryRoot);
+        final Path nestedMonthDirectory = createNestedMonthDirectoryIfNotExists(year, month, day, targetDirectoryRoot);
 
-        manageFileMovement(file, nestedMonthDirectory);
+        manageFileMovement(fileDateDto.getFile(), nestedMonthDirectory);
     }
 
     private void manageFileMovement(File fileToCopy, Path nestedMonthDirectory) {
@@ -47,7 +58,7 @@ public class FileOrganizer {
                 photoOrganizerStatistics.incrementNewFilesCopied();
                 return;
             } catch (IOException e) {
-                throw new FileNotCopiedException("Unable to copy fileToCopy");
+                throw new FileNotCopiedException("Unable to copy file " + fileToCopy.getName());
             }
         }
 
@@ -57,26 +68,29 @@ public class FileOrganizer {
                 final Path fileWithOtherContent = Paths.get(nestedMonthDirectory.toString(),  fileToCopy.getName() + "_" + fileToCopyHash);
                 Files.copy(fileToCopy.toPath(), fileWithOtherContent);
                 photoOrganizerStatistics.incrementNewFilesCopied();
+                throw new RuntimeException("Found files with same name but different content");
             }
 
             photoOrganizerStatistics.incrementSkippedFiles();
+            System.out.println(fileToCopy.getAbsolutePath() + "->" +  copiedFile.toFile().getAbsolutePath());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private Path createNestedMonthDirectoryIfNotExists(int year, String monthValue, File targetDirectoryRoot) {
+    private Path createNestedMonthDirectoryIfNotExists(int year, String monthValue, int day, File targetDirectoryRoot) {
         final Path yearDirectory = Paths.get(targetDirectoryRoot.toPath().toString(), String.valueOf(year));
         final Path monthDirectory = Paths.get(yearDirectory.toString(), monthValue);
-        if(!Files.isDirectory(monthDirectory)) {
-            final boolean isDirectoryCreatedSuccessful = monthDirectory.toFile().mkdirs();
+        final Path dayDirectory = Paths.get(monthDirectory.toString(), String.valueOf(day));
+        if(!Files.isDirectory(dayDirectory)) {
+            final boolean isDirectoryCreatedSuccessful = dayDirectory.toFile().mkdirs();
             if(!isDirectoryCreatedSuccessful) {
-                throw new RootDirNotCreatedException("unable to create month directory");
+                throw new RootDirNotCreatedException("unable to create day directory");
             }
         }
 
-        return monthDirectory;
+        return dayDirectory;
     }
 
     private void createRootDirectoryIfNotExists(File targetDirectoryRoot) {
@@ -96,5 +110,9 @@ public class FileOrganizer {
 
     private int getYear(LocalDateTime dateCreated) {
         return dateCreated.getYear();
+    }
+
+    private int getDay(LocalDateTime dateCreated) {
+        return dateCreated.getDayOfMonth();
     }
 }
