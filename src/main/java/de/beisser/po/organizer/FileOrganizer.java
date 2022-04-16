@@ -72,8 +72,6 @@ public class FileOrganizer {
             }
 
             photoOrganizerStatistics.incrementSkippedFiles();
-            System.out.println(fileToCopy.getAbsolutePath() + "->" +  copiedFile.toFile().getAbsolutePath());
-
         } catch (IOException e) {
             e.printStackTrace();
         }
