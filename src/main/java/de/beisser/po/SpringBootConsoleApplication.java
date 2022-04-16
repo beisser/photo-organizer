@@ -22,15 +22,14 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
-import java.util.stream.Stream;
 
-import static java.lang.System.lineSeparator;
+import static de.beisser.po.PhotoOrganizerConstants.TIME_ZONE_BERLIN_STRING;
 
 @SpringBootApplication
-public class SpringBootConsoleApplication
-        implements CommandLineRunner {
+public class SpringBootConsoleApplication implements CommandLineRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpringBootConsoleApplication.class);
+    private static final StatisticsStringProvider STATISTICS_STRING_PROVIDER = new StatisticsStringProvider();
 
     public static void main(String[] args) {
         SpringApplication.run(SpringBootConsoleApplication.class, args);
@@ -38,9 +37,7 @@ public class SpringBootConsoleApplication
 
     @Override
     public void run(String... args) throws IOException {
-        final CommandLineArgumentParser commandLineArgumentParser = new CommandLineArgumentParser();
-        final ExtractedCommandLineOptions extractedCommandLineOptions = commandLineArgumentParser.extractDirectoryOptions(args);
-
+        final ExtractedCommandLineOptions extractedCommandLineOptions = getExtractedCommandLineOptions(args);
         final long fileCount = getFileCount(extractedCommandLineOptions);
 
         final PhotoOrganizerStatistics photoOrganizerStatistics = new PhotoOrganizerStatistics();
@@ -51,46 +48,28 @@ public class SpringBootConsoleApplication
             Files.walk(Paths.get(extractedCommandLineOptions.getSourceDirectory()))
                     .filter(Files::isRegularFile)
                     .map(file -> convertToFileDate(metadataExtractor, file))
-                    .peek(fileDateDto ->  {
+                    .peek(fileDateDto -> {
                         pb.step();
                         photoOrganizerStatistics.incrementTotalFilesProcessed();
                     })
-                    .forEach(fileDateDto -> fileOrganizer.organize(fileDateDto));
-
-
+                    .forEach(fileOrganizer::organize);
         }
 
-        logPhotoOrganizerStatistics(photoOrganizerStatistics);
+        LOGGER.info(STATISTICS_STRING_PROVIDER.getPhotoOrganizerStatistics(photoOrganizerStatistics));
     }
 
-
-    private static void logPhotoOrganizerStatistics(PhotoOrganizerStatistics photoOrganizerStatistics) {
-        StringBuilder logText = new StringBuilder("Finished organizing photos")
-                .append(lineSeparator());
-
-        logText.append("Count of new files copied ")
-                .append(photoOrganizerStatistics.getNewFilesCopied())
-                .append(lineSeparator());
-
-        logText.append("Count of files skipped ")
-                .append(photoOrganizerStatistics.getSkippedFiles())
-                .append(lineSeparator());
-
-        logText.append("Count of files skipped with different hash ")
-                .append(photoOrganizerStatistics.getSkippedFilesWithDifferentHash())
-                .append(lineSeparator());
-
-        logText.append("Count of total files processed ")
-                .append(photoOrganizerStatistics.getTotalFilesProcessed())
-                .append(lineSeparator());
-
-        LOGGER.info(logText.toString());
+    private ExtractedCommandLineOptions getExtractedCommandLineOptions(String[] args) {
+        final CommandLineArgumentParser commandLineArgumentParser = new CommandLineArgumentParser();
+        return commandLineArgumentParser.extractDirectoryOptions(args);
     }
 
     private static long getFileCount(ExtractedCommandLineOptions extractedCommandLineOptions) {
         long fileCount;
-        try (Stream<Path> list = Files.list(Paths.get(extractedCommandLineOptions.getSourceDirectory()))) {
-            fileCount = list.count();
+        try {
+            fileCount = Files.walk(Paths.get(extractedCommandLineOptions.getSourceDirectory()))
+                    .parallel()
+                    .filter(p -> !p.toFile().isDirectory())
+                    .count();
         } catch (IOException e) {
             throw new FileCountNotAvailableException("unable to get count of all files");
         }
@@ -104,8 +83,8 @@ public class SpringBootConsoleApplication
         } else {
             BasicFileAttributes basicFileAttributes;
             try {
-                basicFileAttributes  = Files.readAttributes(file, BasicFileAttributes.class);
-                LocalDateTime fileTime = basicFileAttributes.lastModifiedTime().toInstant().atZone(ZoneId.of("Europe/Berlin")).toLocalDateTime();
+                basicFileAttributes = Files.readAttributes(file, BasicFileAttributes.class);
+                LocalDateTime fileTime = basicFileAttributes.lastModifiedTime().toInstant().atZone(ZoneId.of(TIME_ZONE_BERLIN_STRING)).toLocalDateTime();
                 return new FileDateDto(file.toFile(), fileTime, false);
             } catch (IOException e) {
                 e.printStackTrace();
